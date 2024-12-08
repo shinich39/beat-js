@@ -72,9 +72,6 @@
 
     function checkTime() {
       const currentTime = ws.getCurrentTime();
-
-      console.log(currentTime)
-
       const _b = beats.find(item => {
         if (Math.abs(item.time - currentTime) <= 0.005) {
           return item;
@@ -96,11 +93,12 @@
       const buffer = await getBuffer(e.target.files[0]);
       b = new Beat(buffer);
 
-      beats = b.getBeatsWithVolume(0, b.sampleRate * FRAME_RATE).map(item => {
-        item.time = b.getTime(item.index);
-        return item;
-      });
-      console.log("Beats:", beats.length);
+      beats = b.getBeats(0, b.sampleRate * FRAME_RATE)
+        .map(item => {
+          item.time = b.getTime(item.index);
+          return item;
+        });
+      console.log("Beats:", beats);
 
       const tempos = b.getTempos(beats);
       console.log("Tempos:", tempos);
