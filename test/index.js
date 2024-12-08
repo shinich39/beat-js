@@ -25,6 +25,11 @@ import fs from "node:fs";
 
   const beats = b.getBeats(channel);
   console.log("Beats", beats);
+  // [
+  //   512,   1024,   1536,   2048,   6144,   6656,   7168,   7680,
+  //  8192,   8704,  11776,  12288,  12800,  13312,  13824,  14336,
+  // 17408,  17920,  18432,  18944,  19456,  19968,  24064,  24576,
+  // ]
   
   const time = b.getTime(beats[0]);
   console.log(time);
