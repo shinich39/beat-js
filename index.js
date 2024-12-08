@@ -1,6 +1,7 @@
 "use strict";
 
 import { encode, decode } from "./libs/wav.js";
+import FFT from "fft.js";
 
 class Beat {
   constructor(buffer) {
@@ -143,6 +144,81 @@ Beat.prototype.getBeats = function (channelIndex, frameSize, func) {
   return this.getBeatsWithVolume(channelIndex, frameSize, func).map(
     (item) => item.index
   );
+};
+
+Beat.prototype.getBeatsWithFFT = function (
+  channelIndex,
+  fftSize,
+  beatThreshold,
+  lowEnergySize,
+  avgEnergySize
+) {
+  if (!fftSize) {
+    fftSize = 512;
+  }
+  if (!beatThreshold) {
+    beatThreshold = 1.2;
+  }
+  if (!lowEnergySize) {
+    lowEnergySize = 40;
+  }
+  if (!avgEnergySize) {
+    avgEnergySize = 8;
+  }
+
+  let energyHistory = [],
+    result = [];
+
+  const fft = new FFT(fftSize);
+  const samples = this.sampleData[channelIndex];
+  for (let i = 0; i < samples.length; i += fftSize) {
+    const part = samples.slice(i, i + fftSize);
+
+    if (part.length < fftSize) {
+      break;
+    }
+
+    const spectrum = fft.createComplexArray();
+    fft.realTransform(spectrum, part);
+
+    let magnitudes = [];
+    for (let j = 0; j < spectrum.length; j += 2) {
+      magnitudes.push(
+        Math.sqrt(
+          // real
+          spectrum[j] * spectrum[j] +
+            // imaginary
+            spectrum[j + 1] * spectrum[j + 1]
+        )
+      );
+    }
+
+    let lowFreqEnergy = 0;
+    for (let j = 0; j < lowEnergySize; j++) {
+      lowFreqEnergy += magnitudes[j];
+    }
+
+    // Save energy
+    energyHistory.push(lowFreqEnergy);
+
+    // Calculate average energy for dynamic threshold
+    let avgEnergy = 0,
+      avgEnergyCounts = 0;
+    for (
+      let j = Math.max(0, energyHistory.length - 1 - avgEnergySize);
+      j < energyHistory.length;
+      j++
+    ) {
+      avgEnergy += energyHistory[j];
+      avgEnergyCounts++;
+    }
+    avgEnergy /= avgEnergyCounts;
+
+    if (lowFreqEnergy > avgEnergy * beatThreshold) {
+      result.push(i);
+    }
+  }
+  return result;
 };
 
 Beat.prototype.getTemposWithCount = function (beats) {
