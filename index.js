@@ -25,6 +25,10 @@ Beat.prototype.getTime = function (index) {
   return index / this.sampleRate;
 };
 
+Beat.prototype.getEnergy = function (sample) {
+  return sample * sample;
+};
+
 Beat.prototype.getMinVolumeWithIndex = function (
   channelIndex,
   startIndex,
@@ -124,7 +128,7 @@ Beat.prototype.getFrames = function (frameSize) {
   return frames;
 };
 
-Beat.prototype.getBeatsWithVolume = function (channelIndex, frameSize, func) {
+Beat.prototype.getPeaksWithVolume = function (channelIndex, frameSize, func) {
   if (!func) {
     func = this.getMaxVolumeWithIndex.bind(this);
   }
@@ -140,13 +144,13 @@ Beat.prototype.getBeatsWithVolume = function (channelIndex, frameSize, func) {
   return result;
 };
 
-Beat.prototype.getBeats = function (channelIndex, frameSize, func) {
-  return this.getBeatsWithVolume(channelIndex, frameSize, func).map(
+Beat.prototype.getPeaks = function (channelIndex, frameSize, func) {
+  return this.getPeaksWithVolume(channelIndex, frameSize, func).map(
     (item) => item.index
   );
 };
 
-Beat.prototype.getBeatsWithFFT = function (
+Beat.prototype.getBeatsWithEnergy = function (
   channelIndex,
   fftSize,
   beatThreshold,
@@ -185,9 +189,9 @@ Beat.prototype.getBeatsWithFFT = function (
     for (let j = 0; j < spectrum.length; j += 2) {
       magnitudes.push(
         Math.sqrt(
-          // real
+          // Real
           spectrum[j] * spectrum[j] +
-            // imaginary
+            // Imaginary
             spectrum[j + 1] * spectrum[j + 1]
         )
       );
@@ -215,19 +219,38 @@ Beat.prototype.getBeatsWithFFT = function (
     avgEnergy /= avgEnergyCounts;
 
     if (lowFreqEnergy > avgEnergy * beatThreshold) {
-      result.push(i);
+      result.push({
+        index: i,
+        energy: lowFreqEnergy,
+      });
     }
   }
   return result;
 };
 
-Beat.prototype.getTemposWithCount = function (beats) {
+Beat.prototype.getBeats = function (
+  channelIndex,
+  fftSize,
+  beatThreshold,
+  lowEnergySize,
+  avgEnergySize
+) {
+  return this.getBeatsWithEnergy(
+    channelIndex,
+    fftSize,
+    beatThreshold,
+    lowEnergySize,
+    avgEnergySize
+  ).map((item) => item.index);
+};
+
+Beat.prototype.getTemposWithCount = function (indexes) {
   let groups = [];
-  for (let i = 0; i < beats.length; i++) {
-    const len = Math.min(i + 10, beats.length);
+  for (let i = 0; i < indexes.length; i++) {
+    const len = Math.min(i + 10, indexes.length);
     for (let j = i + 1; j < len; j++) {
-      const startIndex = beats[i];
-      const endIndex = beats[j];
+      const startIndex = indexes[i];
+      const endIndex = indexes[j];
 
       let tempo = (this.sampleRate * 60) / (endIndex - startIndex);
       while (tempo < 90) {
@@ -253,8 +276,8 @@ Beat.prototype.getTemposWithCount = function (beats) {
   return groups.sort((a, b) => b.count - a.count);
 };
 
-Beat.prototype.getTempos = function (beats) {
-  return this.getTemposWithCount(beats).map((item) => item.tempo);
+Beat.prototype.getTempos = function (indexes) {
+  return this.getTemposWithCount(indexes).map((item) => item.tempo);
 };
 
 export { Beat };

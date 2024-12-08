@@ -27,7 +27,7 @@
     <input id="file" type="file" accept=".wav">
     <label>
       <input id="use-fft" type="checkbox">
-      FFT
+      Use FFT
     </label>
     /
     BPM:
@@ -99,22 +99,20 @@
       b = new Beat(buffer);
 
       if (!document.getElementById("use-fft").checked) {
-        beats = b.getBeatsWithVolume(0, b.sampleRate * FRAME_RATE)
+        beats = b.getPeaksWithVolume(0, b.sampleRate * FRAME_RATE)
           .map(item => {
             item.time = b.getTime(item.index);
             return item;
           });
+        console.log("Peaks:", beats);
       } else {
-        console.log("Use FFT!");
-        beats = b.getBeatsWithFFT(0, 1024, 1.2)
+        beats = b.getBeatsWithEnergy(0, 1024, 1.2)
           .map(item => {
-            return {
-              index: item,
-              time: b.getTime(item)
-            };
+            item.time = b.getTime(item.index);
+            return item;
           });
+        console.log("Beats:", beats);
       }
-      console.log("Beats:", beats);
 
       const tempos = b.getTempos(beats.map(item => item.index));
       console.log("Tempos:", tempos);

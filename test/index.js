@@ -8,8 +8,8 @@ import fs from "node:fs";
 
   const channel = 0;
   const step = b.sampleRate * 0.2;
-  const beats = b.getBeats(channel, step);
-  console.log("Beats", beats);
+  const peaks = b.getPeaks(channel, step);
+  console.log("Peaks", peaks);
   // [
   //     6450,  17431,  23049,  34151,  40030,  50550,
   //   56116,  67149,  70580,  79971,  89169, 100216,
@@ -23,14 +23,14 @@ import fs from "node:fs";
   //   476499, 491802, 497200, 503936, 512030, 521511
   // ]
 
-  const beats2 = b.getBeatsWithFFT(channel);
-  console.log("BeatsWithFFT", beats2);
+  const beats = b.getBeats(channel);
+  console.log("Beats", beats);
   
   const time = b.getTime(beats[0]);
   console.log(time);
   // 0.14625850340136054
 
-  const tempos = b.getTempos(beats);
+  const tempos = b.getTempos(peaks);
   console.log("Tempos", tempos);
   // [
   //   120, 160,  96, 137, 148, 107, 144, 121, 119, 159, 118,
