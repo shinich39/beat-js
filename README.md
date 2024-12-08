@@ -2,6 +2,10 @@
 
 A library for analyze audio data using javascript.
 
+## Demo
+
+[Testing with visualization](https://shinich39.github.io/beat-js/)
+
 ## Usage
 
 ```js
