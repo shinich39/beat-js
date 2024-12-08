@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>index.html</title>
+  <style>
+    body{
+      margin: 32px;
+    }
+    #container{
+      margin: 32px auto;
+      max-width: 1024px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <h1>beat-js</h1>
+
+    <p>
+      Press spacebar to play music.
+    </p>
+
+    <input id="file" type="file" accept=".wav">
+    BPM:
+    <input id="bpm" type="text" style="width: 32px;" readonly>
+    Volume:
+    <input id="wave-volume" type="range" min="0" max="1" value="0.5" step="0.01">
+    Speed:
+    <input id="wave-speed" type="range" min="0.1" max="2" value="1" step="0.01">
+    <br />
+    <div id="wave"></div>
+    <br />
+    <div id="highlight" style="visibility: hidden;"></div>
+    <br />
+    <div id="peaks"></div>
+  </div>
+
+  <script src="../dist/beat.js"></script>
+  <script src="./wavesurfer.js"></script>
+  <script>
+    const { Beat } = window.beat;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const fileElem = document.getElementById("file");  
+    const peakElem = document.getElementById("peaks");
+    const highlightElem = document.getElementById("highlight");
+
+    const FRAME_RATE = 0.5;
+    let timer, b, beats, ct;
+
+    const ws = WaveSurfer.create({
+      container: document.getElementById("wave"),
+      waveColor: 'rgb(200, 0, 200)',
+      progressColor: 'rgb(100, 0, 100)',
+    });
+
+    ws.setVolume(document.getElementById("wave-volume").value);
+    ws.setPlaybackRate(4);
+
+    ws.on('play', () => {
+      timer = setInterval(() => {
+        checkTime();
+      }, 0.1);
+    });
+
+    ws.on('pause', () => {
+      clearInterval(timer);
+    });
+
+    function checkTime() {
+      const currentTime = ws.getCurrentTime();
+
+      console.log(currentTime)
+
+      const _b = beats.find(item => {
+        if (Math.abs(item.time - currentTime) <= 0.005) {
+          return item;
+        }
+      });
+
+      if (_b) {
+        highlight(_b.button);
+      }
+    }
+
+    fileElem.addEventListener("change", async function(e) {
+      if (e.target.files.length < 1) {
+        return;
+      }
+      await ws.loadBlob(e.target.files[0]);
+      console.log("Audio file loaded");
+
+      const buffer = await getBuffer(e.target.files[0]);
+      b = new Beat(buffer);
+
+      beats = b.getBeatsWithVolume(0, b.sampleRate * FRAME_RATE).map(item => {
+        item.time = b.getTime(item.index);
+        return item;
+      });
+      console.log("Beats:", beats.length);
+
+      const tempos = b.getTempos(beats);
+      console.log("Tempos:", tempos);
+      document.getElementById("bpm").value = tempos[0];
+
+      // console.log(ws);
+      // console.log(b);
+
+      peakElem.innerHTML = "";
+      let beatCount = 0;
+      for (let i = 0; i < beats.length; i++) {
+        const btn = document.createElement("button");
+        btn.value = beats[i].time;
+        btn.innerHTML = i;
+        btn.onmouseenter = scrollHandler;
+        peakElem.appendChild(btn);
+        beats[i].button = btn;
+      }
+    });
+
+    function scrollHandler(e) {
+      const time = e.target.value;
+      ws.setTime(time);
+      // ws.play();
+    }
+
+    function highlight(elem) {
+      // highlightElem.style.visibility = "";
+      // highlightElem.innerText = elem.innerText;
+      elem.style.backgroundColor = "black";
+      elem.style.color = "white";
+      setTimeout(() => {
+        // highlightElem.style.visibility = "hidden";
+        elem.style.backgroundColor = "";
+        elem.style.color = "";
+      }, 128);
+    }
+    
+    function getBuffer(file) {
+      return new Promise(function (resolve, reject) {
+        const reader = new FileReader()
+        const readFile = function(event) {
+          const buffer = reader.result
+          resolve(buffer);
+        }
+        reader.addEventListener('load', readFile)
+        reader.readAsArrayBuffer(file)
+      })
+    }
+
+    document.getElementById("wave-volume").addEventListener("change", (e) => {
+      ws.setVolume(e.target.value);
+    });
+
+    document.getElementById("wave-speed").addEventListener("change", (e) => {
+      ws.setPlaybackRate(e.target.value);
+    });
+    
+
+    window.addEventListener("keydown", (e) => {
+      const { key } = e;
+      if (key == " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        ws.setPlaybackRate(document.getElementById("wave-speed").value);
+        ws.playPause();
+      }
+    });
+  </script>
+</body>
+
+</html>
