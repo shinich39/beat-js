@@ -262,7 +262,7 @@ Beat.prototype.getFrames = function(frameSize) {
   }
   return frames;
 };
-Beat.prototype.getBeats = function(channelIndex, frameSize, func) {
+Beat.prototype.getBeatsWithVolume = function(channelIndex, frameSize, func) {
   if (!func) {
     func = this.getMaxVolumeWithIndex.bind(this);
   }
@@ -274,14 +274,18 @@ Beat.prototype.getBeats = function(channelIndex, frameSize, func) {
   }
   return result;
 };
-Beat.prototype.getPeaks = Beat.prototype.getBeats;
+Beat.prototype.getBeats = function(channelIndex, frameSize, func) {
+  return this.getBeatsWithVolume(channelIndex, frameSize, func).map(
+    (item) => item.index
+  );
+};
 Beat.prototype.getTemposWithCount = function(beats) {
   let groups = [];
   for (let i = 0; i < beats.length; i++) {
     const len = Math.min(i + 10, beats.length);
     for (let j = i + 1; j < len; j++) {
-      const startIndex = beats[i].index;
-      const endIndex = beats[j].index;
+      const startIndex = beats[i];
+      const endIndex = beats[j];
       let tempo = this.sampleRate * 60 / (endIndex - startIndex);
       while (tempo < 90) {
         tempo *= 2;

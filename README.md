@@ -21,13 +21,13 @@ const step = b.sampleRate * 0.2;
 const beats = b.getBeats(channel, step);
 console.log(beats);
 // [
-//   { index: 6450, volume: 0.17841120064258575 },
-//   { index: 17431, volume: 0.17566454410552979 },
-//   { index: 23049, volume: 0.18039490282535553 },
+//     6450,  17431,  23049,  34151,  40030,  50550,
+//    56116,  67149,  70580,  79971,  89169, 100216,
+//   111249, 122182, 128230, 138750, 144316, 155349,
 //   ...
 // ]
 
-const time = b.getTime(beats[0].index);
+const time = b.getTime(beats[0]);
 console.log(time);
 // 0.14625850340136054
 

@@ -93,14 +93,14 @@
       const buffer = await getBuffer(e.target.files[0]);
       b = new Beat(buffer);
 
-      beats = b.getBeats(0, b.sampleRate * FRAME_RATE)
+      beats = b.getBeatsWithVolume(0, b.sampleRate * FRAME_RATE)
         .map(item => {
           item.time = b.getTime(item.index);
           return item;
         });
       console.log("Beats:", beats);
 
-      const tempos = b.getTempos(beats);
+      const tempos = b.getTempos(beats.map(item => item.index));
       console.log("Tempos:", tempos);
       document.getElementById("bpm").value = tempos[0];
 
