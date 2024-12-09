@@ -672,67 +672,45 @@ Beat.prototype.getPeaks = function(channelIndex, frameSize, func) {
     (item) => item.index
   );
 };
-Beat.prototype.getBeatsWithEnergy = function(channelIndex, fftSize, beatThreshold, lowEnergySize, avgEnergySize) {
+Beat.prototype.getBeatsWithEnergy = function(channelIndex, fftSize, threshold) {
   if (!fftSize) {
-    fftSize = 512;
+    fftSize = 2048;
   }
-  if (!beatThreshold) {
-    beatThreshold = 1.2;
+  if (!threshold) {
+    threshold = 1.5;
   }
-  if (!lowEnergySize) {
-    lowEnergySize = 40;
-  }
-  if (!avgEnergySize) {
-    avgEnergySize = 8;
-  }
-  let energyHistory = [], result = [];
+  const result = [];
   const fft = new import_fft.default(fftSize);
   const samples = this.sampleData[channelIndex];
+  let prevEnergy = 0;
   for (let i = 0; i < samples.length; i += fftSize) {
-    const part = samples.slice(i, i + fftSize);
-    if (part.length < fftSize) {
+    const chunk = samples.slice(i, i + fftSize);
+    if (chunk.length < fftSize) {
       break;
     }
     const spectrum = fft.createComplexArray();
-    fft.realTransform(spectrum, part);
-    let magnitudes = [];
+    fft.realTransform(spectrum, chunk);
+    const magnitudes = [];
     for (let j = 0; j < spectrum.length; j += 2) {
-      magnitudes.push(
-        Math.sqrt(
-          // Real
-          spectrum[j] * spectrum[j] + // Imaginary
-          spectrum[j + 1] * spectrum[j + 1]
-        )
-      );
+      const real = spectrum[j];
+      const imag = spectrum[j + 1];
+      magnitudes.push(Math.sqrt(real * real));
     }
-    let lowFreqEnergy = 0;
-    for (let j = 0; j < lowEnergySize; j++) {
-      lowFreqEnergy += magnitudes[j];
-    }
-    energyHistory.push(lowFreqEnergy);
-    let avgEnergy = 0, avgEnergyCounts = 0;
-    for (let j = Math.max(0, energyHistory.length - 1 - avgEnergySize); j < energyHistory.length; j++) {
-      avgEnergy += energyHistory[j];
-      avgEnergyCounts++;
-    }
-    avgEnergy /= avgEnergyCounts;
-    if (lowFreqEnergy > avgEnergy * beatThreshold) {
+    const energy = magnitudes.reduce((acc, cur) => acc + cur, 0);
+    if (energy > prevEnergy * threshold) {
       result.push({
         index: i,
-        energy: lowFreqEnergy
+        energy
       });
     }
+    prevEnergy = energy;
   }
   return result;
 };
-Beat.prototype.getBeats = function(channelIndex, fftSize, beatThreshold, lowEnergySize, avgEnergySize) {
-  return this.getBeatsWithEnergy(
-    channelIndex,
-    fftSize,
-    beatThreshold,
-    lowEnergySize,
-    avgEnergySize
-  ).map((item) => item.index);
+Beat.prototype.getBeats = function(channelIndex, fftSize, threshold) {
+  return this.getBeatsWithEnergy(channelIndex, fftSize, threshold).map(
+    (item) => item.index
+  );
 };
 Beat.prototype.getTemposWithCount = function(indexes) {
   let groups = [];

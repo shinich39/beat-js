@@ -26,13 +26,18 @@
 
     <input id="file" type="file" accept=".wav">
     <label>
-      <input id="use-fft" type="checkbox">
+      <input id="type-1" name="type" type="radio" checked>
+      Use peak
+    </label>
+    <label>
+      <input id="type-2" name="type" type="radio">
       Use FFT
     </label>
     /
     BPM:
     <span id="bpm">0</span>
-    /
+    <br />
+    <br />
     Volume:
     <input id="wave-volume" type="range" min="0" max="1" value="0.5" step="0.01">
     /
@@ -98,19 +103,46 @@
       const buffer = await getBuffer(e.target.files[0]);
       b = new Beat(buffer);
 
-      if (!document.getElementById("use-fft").checked) {
+      if (document.getElementById("type-1").checked) {
         beats = b.getPeaksWithVolume(0, b.sampleRate * FRAME_RATE)
           .map(item => {
             item.time = b.getTime(item.index);
             return item;
           });
         console.log("Peaks:", beats);
-      } else {
-        beats = b.getBeatsWithEnergy(0, 1024, 1.2)
+      } else if (document.getElementById("type-2").checked) {
+        beats = b.getBeatsWithEnergy(0)
           .map(item => {
             item.time = b.getTime(item.index);
             return item;
           });
+
+        // let minEnergy = Number.MAX_SAFE_INTEGER;
+        // let maxEnergy = Number.MIN_SAFE_INTEGER;
+        // let totalEnergy = 0;
+        // let avgEnergy = 0;
+        // for (const beat of beats) {
+        //   if (minEnergy > beat.energy) {
+        //     minEnergy = beat.energy;
+        //   }
+        //   if (maxEnergy < beat.energy) {
+        //     maxEnergy = beat.energy;
+        //   }
+        //   totalEnergy += beat.energy;
+        // }
+
+        // avgEnergy = totalEnergy / beats.length;
+        // avgEnergy *= 0.6;
+
+        // Remove low energy beats
+        // beats = beats.filter((item, index, items) => {
+        //   return item.energy > avgEnergy;
+        // });
+
+        // console.log("MinEnergy:", minEnergy);
+        // console.log("MaxEnergy:", maxEnergy);
+        // console.log("AvgEnergy:", avgEnergy);
+
         console.log("Beats:", beats);
       }
 
@@ -148,7 +180,7 @@
         // highlightElem.style.visibility = "hidden";
         elem.style.backgroundColor = "";
         elem.style.color = "";
-      }, 128);
+      }, 32);
     }
     
     function getBuffer(file) {
